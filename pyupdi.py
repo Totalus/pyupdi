@@ -1,6 +1,6 @@
 #!/usr/bin/env python
-from device.device import Device
-from updi.nvm import UpdiNvmProgrammer
+from pyupdi.device.device import Device
+from pyupdi.updi.nvm import UpdiNvmProgrammer
 
 import sys
 import argparse

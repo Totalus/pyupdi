@@ -1,8 +1,8 @@
 
 import logging
 
-from updi.physical import UpdiPhysical
-import updi.constants as constants
+from pyupdi.updi.physical import UpdiPhysical
+import pyupdi.updi.constants as constants
 
 class UpdiDatalink(object):
     """

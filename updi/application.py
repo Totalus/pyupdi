@@ -2,9 +2,9 @@
 import logging
 import time
 
-import updi.constants as constants
-from updi.link import UpdiDatalink
-from updi.timeout import Timeout
+import pyupdi.updi.constants as constants
+from pyupdi.updi.link import UpdiDatalink
+from pyupdi.updi.timeout import Timeout
 
 class UpdiApplication(object):
     """

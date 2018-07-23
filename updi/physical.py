@@ -2,7 +2,7 @@ import logging
 import time
 import serial
 
-import updi.constants as constants
+import pyupdi.updi.constants as constants
 
 class UpdiPhysical(object):
     """
