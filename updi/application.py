@@ -78,7 +78,7 @@ class UpdiApplication(object):
         self.reset(apply_reset=False)
 
         # And wait for unlock
-        if not self.wait_unlocked(100):
+        if not self.wait_unlocked(300):
             raise Exception("Failed to chip erase using key")
 
     def enter_progmode(self):

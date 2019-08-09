@@ -189,3 +189,30 @@ class UpdiNvmProgrammer(object):
             start_address += self.device.flash_start
 
         return data, start_address
+
+    def load_eeprom_ihex(self, filename):
+        """
+            Load from intel hex format
+        """
+        self.logger.info("Loading from hexfile '{}'".format(filename))
+        from intelhex import IntelHex
+
+        ih = IntelHex()
+        ih.loadhex(filename)
+        data = ih.tobinarray()
+        start_address = ih.minaddr()
+        self.logger.info("Loaded {0:d} bytes from ihex starting at address 0x{1:04X}".format(len(data), start_address))
+
+        # Size check
+        if len(data) > self.device.eeprom_size:
+            raise Exception("ihex too large for flash")
+
+        # Offset to actual flash start
+        if start_address < self.device.eeprom_start:
+            self.logger.info("Adjusting flash offset to address 0x{:04X}".format(self.device.eeprom_start))
+            start_address += self.device.eeprom_start
+
+        return data, start_address
+
+    def lock_device(self):
+        self.write_fuse(0x0A, 0)

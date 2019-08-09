@@ -5,6 +5,7 @@ from pyupdi.updi.nvm import UpdiNvmProgrammer
 import sys
 import argparse
 import re
+#from array import array
 
 import logging
 """
@@ -134,7 +135,30 @@ def _flash_file(nvm, filename):
             fail=True
 
     if not fail:
-        print("Programming successful")
+        print("Programming flash successful")
+    return not fail
+
+def _flash_eeprom(nvm, filename):
+    data, start_address = nvm.load_eeprom_ihex(filename)
+    
+    #data = array('B',range(0,33))
+    #print("data",data)
+
+    fail=False
+
+    #nvm.chip_erase() # This would erase previously programmed flash...
+    nvm.write_flash(start_address, data)
+
+    # Read out again
+    readback = nvm.read_flash(nvm.device.eeprom_start, 128)
+    #print("readback",readback)
+    for i, _ in enumerate(data):
+        if data[i] != readback[i]:
+            print("Verify error at location 0x{0:04X}: expected 0x{1:02X} read 0x{2:02X} ".format(i, data[i], readback[i]))
+            fail=True
+
+    if not fail:
+        print("Programming eeprom successful")
     return not fail
 
 
