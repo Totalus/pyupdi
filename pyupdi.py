@@ -1,12 +1,15 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+"""
+    Simple command line pyupdi utility
+"""
 from pyupdi.device.device import Device
 from pyupdi.updi.nvm import UpdiNvmProgrammer
 
 import sys
 import argparse
 import re
-
 import logging
+
 """
 Copyright (c) 2016 Atmel Corporation, a wholly owned subsidiary of Microchip Technology Inc.
 
@@ -51,6 +54,7 @@ pyupdi is a Python utility for programming AVR devices with UPDI interface
 
 """
 
+
 def _main():
     parser = argparse.ArgumentParser(description="Simple command line"
                                      " interface for UPDI programming")
@@ -62,6 +66,8 @@ def _main():
                         help="Perform a chip erase (implied with --flash)")
     parser.add_argument("-b", "--baudrate", type=int, default=115200)
     parser.add_argument("-f", "--flash", help="Intel HEX file to flash.")
+    parser.add_argument("-r", "--reset", action="store_true",
+                        help="Reset")
     parser.add_argument("-fs", "--fuses", action="append", nargs="*",
                         help="Fuse to set (syntax: fuse_nr:0xvalue)")
     parser.add_argument("-v", "--verbose", action="store_true",
@@ -69,8 +75,8 @@ def _main():
 
     args = parser.parse_args(sys.argv[1:])
 
-    if args.fuses is None and args.flash is None and not args.erase:
-        print("No action (erase, flash or fuses)")
+    if not any( (args.fuses, args.flash, args.erase, args.reset)):
+        print("No action (erase, flash, reset or fuses)")
         sys.exit(0)
 
     if args.verbose:
@@ -83,19 +89,21 @@ def _main():
     nvm = UpdiNvmProgrammer(comport=args.comport,
                             baud=args.baudrate,
                             device=Device(args.device))
+    if not args.reset: # any action except reset
+        try:
+            nvm.enter_progmode()
+        except:
+            print("Device is locked. Performing unlock with chip erase.")
+            nvm.unlock_device()
 
-    try:
-        nvm.enter_progmode()
-    except:
-        print("Device is locked. Performing unlock with chip erase.")
-        nvm.unlock_device()
+        nvm.get_device_info()
 
-    nvm.get_device_info()
+        if not _process(nvm, args):
+            print("Error during processing")
 
-    if not _process(nvm, args):
-        print("Error during processing")
-
+    # Reset only needs this.
     nvm.leave_progmode()
+
 
 def _process(nvm, args):
     if args.erase:
@@ -118,10 +126,11 @@ def _process(nvm, args):
         return _flash_file(nvm, args.flash)
     return True
 
+
 def _flash_file(nvm, filename):
     data, start_address = nvm.load_ihex(filename)
 
-    fail=False
+    fail = False
 
     nvm.chip_erase()
     nvm.write_flash(start_address, data)
@@ -130,8 +139,9 @@ def _flash_file(nvm, filename):
     readback = nvm.read_flash(nvm.device.flash_start, len(data))
     for i, _ in enumerate(data):
         if data[i] != readback[i]:
-            print("Verify error at location 0x{0:04X}: expected 0x{1:02X} read 0x{2:02X} ".format(i, data[i], readback[i]))
-            fail=True
+            print("Verify error at location 0x{0:04X}: expected 0x{1:02X} read 0x{2:02X} ".format(i, data[i],
+                                                                                                  readback[i]))
+            fail = True
 
     if not fail:
         print("Programming successful")
@@ -145,6 +155,7 @@ def _set_fuse(nvm, fusenum, value):
     if not ret:
         print("Verify error for fuse {0}, expected 0x{1:02X} read 0x{2:02X}".format(fusenum, value, actual_val))
     return ret
+
 
 if __name__ == "__main__":
     _main()

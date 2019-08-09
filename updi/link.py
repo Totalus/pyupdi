@@ -1,8 +1,12 @@
-
+"""
+    Link layer in UPDI protocol stack
+"""
 import logging
+import time
 
 from pyupdi.updi.physical import UpdiPhysical
 import pyupdi.updi.constants as constants
+
 
 class UpdiDatalink(object):
     """
@@ -68,7 +72,8 @@ class UpdiDatalink(object):
         """
         self.logger.info("LD from 0x{0:04X}".format(address))
         self.updi_phy.send(
-            [constants.UPDI_PHY_SYNC, constants.UPDI_LDS | constants.UPDI_ADDRESS_16 | constants.UPDI_DATA_8, address & 0xFF, (address >> 8) & 0xFF])
+            [constants.UPDI_PHY_SYNC, constants.UPDI_LDS | constants.UPDI_ADDRESS_16 | constants.UPDI_DATA_8,
+             address & 0xFF, (address >> 8) & 0xFF])
         return self.updi_phy.receive(1)[0]
 
     def ld16(self, address):
@@ -77,7 +82,8 @@ class UpdiDatalink(object):
         """
         self.logger.info("LD from 0x{0:04X}".format(address))
         self.updi_phy.send(
-            [constants.UPDI_PHY_SYNC, constants.UPDI_LDS | constants.UPDI_ADDRESS_16 | constants.UPDI_DATA_16, address & 0xFF, (address >> 8) & 0xFF])
+            [constants.UPDI_PHY_SYNC, constants.UPDI_LDS | constants.UPDI_ADDRESS_16 | constants.UPDI_DATA_16,
+             address & 0xFF, (address >> 8) & 0xFF])
         return self.updi_phy.receive(2)
 
     def st(self, address, value):
@@ -86,7 +92,8 @@ class UpdiDatalink(object):
         """
         self.logger.info("ST to 0x{0:04X}".format(address))
         self.updi_phy.send(
-            [constants.UPDI_PHY_SYNC, constants.UPDI_STS | constants.UPDI_ADDRESS_16 | constants.UPDI_DATA_8, address & 0xFF, (address >> 8) & 0xFF])
+            [constants.UPDI_PHY_SYNC, constants.UPDI_STS | constants.UPDI_ADDRESS_16 | constants.UPDI_DATA_8,
+             address & 0xFF, (address >> 8) & 0xFF])
         response = self.updi_phy.receive(1)
         if len(response) != 1 or response[0] != constants.UPDI_PHY_ACK:
             raise Exception("Error with st")
@@ -102,7 +109,8 @@ class UpdiDatalink(object):
         """
         self.logger.info("ST to 0x{0:04X}".format(address))
         self.updi_phy.send(
-            [constants.UPDI_PHY_SYNC, constants.UPDI_STS | constants.UPDI_ADDRESS_16 | constants.UPDI_DATA_16, address & 0xFF, (address >> 8) & 0xFF])
+            [constants.UPDI_PHY_SYNC, constants.UPDI_STS | constants.UPDI_ADDRESS_16 | constants.UPDI_DATA_16,
+             address & 0xFF, (address >> 8) & 0xFF])
         response = self.updi_phy.receive(1)
         if len(response) != 1 or response[0] != constants.UPDI_PHY_ACK:
             raise Exception("Error with st")
@@ -117,7 +125,8 @@ class UpdiDatalink(object):
             Loads a number of bytes from the pointer location with pointer post-increment
         """
         self.logger.info("LD8 from ptr++")
-        self.updi_phy.send([constants.UPDI_PHY_SYNC, constants.UPDI_LD | constants.UPDI_PTR_INC | constants.UPDI_DATA_8])
+        self.updi_phy.send([constants.UPDI_PHY_SYNC, constants.UPDI_LD | constants.UPDI_PTR_INC |
+                            constants.UPDI_DATA_8])
         return self.updi_phy.receive(size)
 
     def ld_ptr_inc16(self, words):
@@ -125,7 +134,8 @@ class UpdiDatalink(object):
             Load a 16-bit word value from the pointer location with pointer post-increment
         """
         self.logger.info("LD16 from ptr++")
-        self.updi_phy.send([constants.UPDI_PHY_SYNC, constants.UPDI_LD | constants.UPDI_PTR_INC | constants.UPDI_DATA_16])
+        self.updi_phy.send([constants.UPDI_PHY_SYNC, constants.UPDI_LD | constants.UPDI_PTR_INC |
+                            constants.UPDI_DATA_16])
         return self.updi_phy.receive(words << 1)
 
     def st_ptr(self, address):
@@ -134,7 +144,8 @@ class UpdiDatalink(object):
         """
         self.logger.info("ST to ptr")
         self.updi_phy.send(
-            [constants.UPDI_PHY_SYNC, constants.UPDI_ST | constants.UPDI_PTR_ADDRESS | constants.UPDI_DATA_16, address & 0xFF, (address >> 8) & 0xFF])
+            [constants.UPDI_PHY_SYNC, constants.UPDI_ST | constants.UPDI_PTR_ADDRESS | constants.UPDI_DATA_16,
+             address & 0xFF, (address >> 8) & 0xFF])
         response = self.updi_phy.receive(1)
         if len(response) != 1 or response[0] != constants.UPDI_PHY_ACK:
             raise Exception("Error with st_ptr")
@@ -144,7 +155,8 @@ class UpdiDatalink(object):
             Store data to the pointer location with pointer post-increment
         """
         self.logger.info("ST8 to *ptr++")
-        self.updi_phy.send([constants.UPDI_PHY_SYNC, constants.UPDI_ST | constants.UPDI_PTR_INC | constants.UPDI_DATA_8, data[0]])
+        self.updi_phy.send([constants.UPDI_PHY_SYNC, constants.UPDI_ST | constants.UPDI_PTR_INC | constants.UPDI_DATA_8,
+                            data[0]])
         response = self.updi_phy.receive(1)
 
         if len(response) != 1 or response[0] != constants.UPDI_PHY_ACK:
@@ -162,22 +174,20 @@ class UpdiDatalink(object):
     def st_ptr_inc16(self, data):
         """
             Store a 16-bit word value to the pointer location with pointer post-increment
+    
+            Disable acks when we do this, to reduce latency.
         """
         self.logger.info("ST16 to *ptr++")
-        self.updi_phy.send([constants.UPDI_PHY_SYNC, constants.UPDI_ST | constants.UPDI_PTR_INC | constants.UPDI_DATA_16, data[0], data[1]])
-        response = self.updi_phy.receive(1)
+        ctrla_ackon = 1 << constants.UPDI_CTRLA_IBDLY_BIT # with acks enabled.
+        ctrla_ackoff = ctrla_ackon | (1 << constants.UPDI_CTRLA_RSD_BIT) # acks off. (RSD)
+        # (Response signature disable)
+        self.stcs(constants.UPDI_CS_CTRLA, ctrla_ackoff)
+        self.updi_phy.send([constants.UPDI_PHY_SYNC, constants.UPDI_ST | constants.UPDI_PTR_INC |
+                            constants.UPDI_DATA_16] )
+        self.updi_phy.send(data) # No response expected.
+        # Re-enable acks
+        self.stcs(constants.UPDI_CS_CTRLA, ctrla_ackon)
 
-        if len(response) != 1 or response[0] != constants.UPDI_PHY_ACK:
-            raise Exception("ACK error with st_ptr_inc16")
-
-        n = 2
-        while n < len(data):
-            self.updi_phy.send([data[n], data[n + 1]])
-            response = self.updi_phy.receive(1)
-
-            if len(response) != 1 or response[0] != constants.UPDI_PHY_ACK:
-                raise Exception("Error with st_ptr_inc16")
-            n += 2
 
     def repeat(self, repeats):
         """
@@ -185,7 +195,8 @@ class UpdiDatalink(object):
         """
         self.logger.info("Repeat {0:d}".format(repeats))
         repeats -= 1
-        self.updi_phy.send([constants.UPDI_PHY_SYNC, constants.UPDI_REPEAT | constants.UPDI_REPEAT_WORD, repeats & 0xFF, (repeats >> 8) & 0xFF])
+        self.updi_phy.send([constants.UPDI_PHY_SYNC, constants.UPDI_REPEAT | constants.UPDI_REPEAT_WORD,
+                            repeats & 0xFF, (repeats >> 8) & 0xFF])
 
     def read_sib(self):
         """
@@ -202,4 +213,3 @@ class UpdiDatalink(object):
             raise Exception("Invalid KEY length!")
         self.updi_phy.send([constants.UPDI_PHY_SYNC, constants.UPDI_KEY | constants.UPDI_KEY_KEY | size])
         self.updi_phy.send(list(reversed(list(key))))
-

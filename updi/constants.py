@@ -1,4 +1,6 @@
-
+"""
+    UPDI protocol constants
+"""
 # UPDI commands and control definitions
 UPDI_BREAK = 0x00
 
@@ -51,6 +53,7 @@ UPDI_ASI_SYS_STATUS = 0x0B
 UPDI_ASI_CRC_STATUS = 0x0C
 
 UPDI_CTRLA_IBDLY_BIT = 7
+UPDI_CTRLA_RSD_BIT = 3
 UPDI_CTRLB_CCDETDIS_BIT = 3
 UPDI_CTRLB_UPDIDIS_BIT = 2
 
