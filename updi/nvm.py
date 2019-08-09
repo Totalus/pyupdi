@@ -1,7 +1,11 @@
+"""
+    NVM programming algorithm
+"""
 import logging
 
 from updi.application import UpdiApplication
 import updi.constants as constants
+
 
 class UpdiNvmProgrammer(object):
     """
