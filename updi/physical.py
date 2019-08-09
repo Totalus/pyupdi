@@ -1,8 +1,12 @@
+"""
+    Serial driver for UPDI stack
+"""
 import logging
 import time
 import serial
 
 import pyupdi.updi.constants as constants
+
 
 class UpdiPhysical(object):
     """
@@ -22,16 +26,15 @@ class UpdiPhysical(object):
         self.baud = baud
         self.ser = None
         self.initialise_serial(self.port, self.baud)
+        # send an initial break as handshake
+        self.send([constants.UPDI_BREAK])
 
     def initialise_serial(self, port, baud):
         """
             Standard COM port initialisation
         """
-
         self.logger.info("Opening {} at {} baud".format(port, baud))
         self.ser = serial.Serial(port, baud, parity=serial.PARITY_EVEN, timeout=1, stopbits=serial.STOPBITS_TWO)
-        # send an initial break as handshake
-        self.send([constants.UPDI_BREAK])
 
     def _loginfo(self, msg, data):
         if data and isinstance(data[0], str):
@@ -55,7 +58,7 @@ class UpdiPhysical(object):
         # At 300 bauds, the break character will pull the line low for 30ms
         # Which is slightly above the recommended 24.6ms
         self.ser.close()
-        temporary_serial = serial.Serial(self.port, 300, stopbits=serial.STOPBITS_ONE)
+        temporary_serial = serial.Serial(self.port, 300, stopbits=serial.STOPBITS_ONE, timeout=1)
 
         # Send two break characters, with 1 stop bit in between
         temporary_serial.write([constants.UPDI_BREAK, constants.UPDI_BREAK])
@@ -74,16 +77,12 @@ class UpdiPhysical(object):
         """
         self._loginfo("send", command)
 
-        for character in command:
-
-            # Send
-            self.ser.write([character])
-
-            # Echo
-            self.ser.read()
-
-            # Inter-byte delay
-            time.sleep(self.ibdly)
+        self.ser.write(command)
+        # it will echo back.
+        echo = self.ser.read(len(command))
+        if echo != bytes(command):
+            self._loginfo("incorrect echo", echo)
+            raise Exception("Incorrect echo data")
 
     def receive(self, size):
         """
@@ -99,7 +98,7 @@ class UpdiPhysical(object):
             character = self.ser.read()
 
             # Anything in?
-            if character != "":
+            if character:
                 response.append(ord(character))
                 size -= 1
             else:
